@@ -23,9 +23,9 @@ import csv
 
 d = pd.read_csv("train.csv")
 d1 = pd.read_csv("test.csv")
-train = pd.DataFrame(data = d)
-test = pd.DataFrame(data = d1)
-whole = pd.concat([train, test], sort = False).reset_index(drop=True)
+#train = pd.DataFrame(data = d)
+#test = pd.DataFrame(data = d1)
+whole = pd.concat([d, d1], sort = False).reset_index(drop=True)
 
 
 """
@@ -47,34 +47,37 @@ whole["Embarked"] = whole["Embarked"].fillna("S")
 median_fare = whole.groupby(["Pclass", "Parch", "SibSp"]).Fare.median()[3][0][0] 
 whole['Fare'] = whole['Fare'].fillna(median_fare)
 
+whole['Deck'] = whole['Cabin'].apply(lambda x: x[0].capitalize() if pd.notnull(x) else 'M')
 
+idx = whole[whole['Deck'] == 'T'].index
+whole.loc[idx, 'Deck'] = 'A'
 
-dummy_gender = pd.get_dummies(train["Sex"])
-train = pd.concat([train, dummy_gender], axis = 1)
-train = train.drop(["Sex"], axis = 1)
+dummy_gender = pd.get_dummies(whole["Sex"])
+whole = pd.concat([whole, dummy_gender], axis = 1)
+whole = whole.drop(["Sex"], axis = 1)
 
-dummy_embarked = pd.get_dummies(train["Embarked"])
-train = pd.concat([train, dummy_embarked], axis = 1)
-train = train.drop(["Embarked"], axis = 1)
+dummy_embarked = pd.get_dummies(whole["Embarked"])
+whole = pd.concat([whole, dummy_embarked], axis = 1)
+whole = whole.drop(["Embarked"], axis = 1)
 
+whole.drop(['Cabin'], inplace=True, axis=1)
 
-dummy_gender = pd.get_dummies(test["Sex"])
-test = pd.concat([test, dummy_gender], axis = 1)
-test = test.drop(["Sex"], axis = 1)
+def divide_df(all_data):
+    # Returns divided dfs of training and test set
+    return all_data.loc[:890], all_data.loc[891:].drop(['Survived'], axis=1)
 
-dummy_embarked = pd.get_dummies(test["Embarked"])
-test = pd.concat([test, dummy_embarked], axis = 1)
-test = test.drop(["Embarked"], axis = 1)
+train, test = divide_df(whole)
 
+def display_missing(df):    
+    for col in df.columns.tolist():          
+        print('{} column missing values: {}'.format(col, df[col].isnull().sum()))
+    print('\n')
 
-#train = train.drop(["Cabin", "Name", "Ticket"], axis = 1)
-#train = train.fillna(value = 29.699118)
+dfs = [train, test]
 
-
-#test = test.drop(["Cabin", "Name", "Ticket"], axis = 1)
-#test = test.fillna(value =  30.272590)
-
-
+for df in dfs:
+    print('{}'.format(df))
+    display_missing(df)
 
 """
 #Heatmap feature selection
@@ -85,7 +88,7 @@ ax = plt.subplot(111)
 plt.figure(figsize=(50,50))
 heatmap = sns.heatmap(df.corr(),annot = True,cmap="RdYlGn", vmin = 0, vmax = 1)
 plt.show()
-"""
+
 
 orig_features = ["Pclass", "Age", "SibSp", "Parch", "Fare", "female", "male", "S", "Q", "C"]
 
@@ -96,7 +99,7 @@ y_train = train[["Survived"]].to_numpy()
 x_test = test[orig_features]
 
 
-"""
+
 regressor = RandomForestRegressor(n_estimators = 200)
 regressor.fit(x_data, y_data)
 
@@ -106,16 +109,15 @@ for index in sorted_indices:
     print(f"{sorted_indices[index]}: {regressor.feature_importances_[index]}")
     
    Most important features: #Fare, Pclass, Parch, SibSp, Age
-"""
 
-"""
+
+
 pd.crosstab(train.Pclass, train.Survived).plot(kind='bar')
 plt.title("Surviving citizens and their class")
 plt.xlabel('Passenger Class')
 plt.ylabel('Surviving citizens')
-"""
 
-"""
+
 linear_regressor = LinearRegression()
 linear_regressor.fit(x_train, y_train)
 predictions = linear_regressor.predict(x_test)
