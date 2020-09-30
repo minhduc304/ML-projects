@@ -7,17 +7,14 @@ Created on Wed Mar 11 10:27:10 2020
 
 @author: ducvm
 """
-
+import numpy as np
+import seaborn as sns
 from tensorflow import keras
 from keras import Sequential
 from keras.layers import Dense
 import sklearn as sk
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestRegressor, ExtraTreesClassifier
-from sklearn.feature_selection import SelectKBest, mutual_info_regression, f_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 import csv
 
@@ -36,7 +33,6 @@ for pclass in range(1, 4):
         print('Median age of Pclass {} {}s: {}'.format(pclass, sex, age_by_pclass_sex[sex][pclass]))
 print('Median age of all passengers: {}'.format(whole['Age'].median()))
 """
-
 
 whole["Age"] = whole.groupby(['Sex', 'Pclass'])['Age'].apply(lambda x: x.fillna(x.median()))
 
@@ -62,32 +58,27 @@ whole = whole.drop(["Embarked"], axis = 1)
 
 whole.drop(['Cabin'], inplace=True, axis=1)
 
+whole['Deck'] = whole['Deck'].replace(['A', 'B', 'C'], 'ABC')
+whole['Deck'] = whole['Deck'].replace(['D', 'E'], 'DE')
+whole['Deck'] = whole['Deck'].replace(['F', 'G'], 'FG')
+
 def divide_df(all_data):
     # Returns divided dfs of training and test set
     return all_data.loc[:890], all_data.loc[891:].drop(['Survived'], axis=1)
 
 train, test = divide_df(whole)
 
-def display_missing(df):    
-    for col in df.columns.tolist():          
-        print('{} column missing values: {}'.format(col, df[col].isnull().sum()))
-    print('\n')
 
-dfs = [train, test]
+# def display_missing(df):    
+#     for col in df.columns.tolist():          
+#         print('{} column missing values: {}'.format(col, df[col].isnull().sum()))
+#     print('\n')
 
-for df in dfs:
-    print('{}'.format(df))
-    display_missing(df)
+# dfs = [train, test]
 
-"""
-#Heatmap feature selection
-corrmat = df.corr()
-#plot heat map
-sns.set(font_scale = 1.8)
-ax = plt.subplot(111)
-plt.figure(figsize=(50,50))
-heatmap = sns.heatmap(df.corr(),annot = True,cmap="RdYlGn", vmin = 0, vmax = 1)
-plt.show()
+# for df in dfs:
+#     print('{}'.format(df))
+#     display_missing(df)
 
 
 orig_features = ["Pclass", "Age", "SibSp", "Parch", "Fare", "female", "male", "S", "Q", "C"]
@@ -100,50 +91,21 @@ x_test = test[orig_features]
 
 
 
-regressor = RandomForestRegressor(n_estimators = 200)
-regressor.fit(x_data, y_data)
+# regressor = RandomForestRegressor(n_estimators = 200)
+# regressor.fit(x_data, y_data)
 
-sorted_indices = np.argsort(regressor.feature_importances_)[::-1]
+# sorted_indices = np.argsort(regressor.feature_importances_)[::-1]
 
-for index in sorted_indices:
-    print(f"{sorted_indices[index]}: {regressor.feature_importances_[index]}")
+# for index in sorted_indices:
+#     print(f"{sorted_indices[index]}: {regressor.feature_importances_[index]}")
     
-   Most important features: #Fare, Pclass, Parch, SibSp, Age
-
-
-
-pd.crosstab(train.Pclass, train.Survived).plot(kind='bar')
-plt.title("Surviving citizens and their class")
-plt.xlabel('Passenger Class')
-plt.ylabel('Surviving citizens')
+#    Most important features: #Fare, Pclass, Parch, SibSp, Age
 
 
 linear_regressor = LinearRegression()
 linear_regressor.fit(x_train, y_train)
 predictions = linear_regressor.predict(x_test)
 
-
-
-model = Sequential()
-
-model.add(Dense(150, input_dim = 7,activation='relu'))
-model.add(Dense(100, activation='relu'))
-model.add(Dense(100, activation='relu'))
-model.add(Dense(100, activation='relu'))
-model.add(Dense(50, activation='relu'))
-model.add(Dense(50, activation='relu'))
-model.add(Dense(50, activation='relu'))
-model.add(Dense(1))
-
-model.compile(loss='mean_squared_error', optimizer='adam')
-
-model.fit(x_train, y_train, epochs = 500, shuffle = False, verbose = 2)
-predictions = model.predict(x_test)
-
-
-decision_tree = DecisionTreeClassifier()
-decision_tree = decision_tree.fit(x_train,y_train)
-predictions = decision_tree.predict(x_test)
 
 
 #Append predictions to csv file with Id of passenger and whether they survived (0 = no, 1 = yes)
@@ -167,4 +129,3 @@ with open('submission.csv', 'w') as f:
     wr = csv.writer(f)
     for row in rows:
         wr.writerow(row)
-"""       
